@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find the First Sound</title>
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --team-a: #ff4757;
+            --team-b: #2e86de;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%; overflow: hidden;
+            font-family: 'Balsamiq Sans', cursive;
+            user-select: none;
+        }
+
+        /* Start Page */
+        #start-page {
+            position: absolute; width: 100%; height: 100%;
+            background: #4facfe url('start page background.jpg') no-repeat center center/cover;
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: flex-end; padding-bottom: 6vh; z-index: 100;
+        }
+
+        .start-page-controls { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+        #play-btn {
+            padding: 25px 90px; font-size: 50px; cursor: pointer; background: #2ecc71; color: white;
+            border: 6px solid #fff; border-radius: 30px; font-weight: bold; box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        #edit-btn {
+            padding: 12px 24px; font-size: 20px; background: rgba(0,0,0,0.6); color: white;
+            border: 3px solid white; border-radius: 12px; cursor: pointer;
+        }
+
+        /* Game Screen */
+        #game-container { display: none; height: 100%; width: 100%; flex-direction: row; position: relative; }
+        .side { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding: 20px; transition: background 0.2s; }
+        #side-a { background: #fff0f0; border-right: 4px dashed #ccc; }
+        #side-b { background: #f0faff; }
+
+        .score-display { font-size: 45px; font-weight: bold; }
+        .side-a-text { color: var(--team-a); }
+        .side-b-text { color: var(--team-b); }
+
+        .vocab-img-container {
+            width: 450px; height: 350px; border: 10px solid #333; border-radius: 25px;
+            background: white; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .vocab-img { width: 100%; height: 100%; object-fit: contain; }
+
+        .word-display { font-size: 100px; letter-spacing: 15px; display: flex; align-items: center; gap: 10px; font-weight:bold; }
+        .drop-zone { width: 110px; height: 120px; border: 6px dashed #aaa; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.6); }
+
+        .letters-container { display: flex; gap: 30px; justify-content: center; min-height: 120px; }
+        .letter { width: 100px; height: 100px; background: white; border: 5px solid #333; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 60px; font-weight: bold; cursor: pointer; box-shadow: 0 8px 0 #333; }
+        .letter:active { transform: translateY(4px); box-shadow: 0 4px 0 #333; }
+
+        #timer-bomb { position: absolute; left: 50%; top: 5%; transform: translateX(-50%); width: 110px; height: 110px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 6px solid #ff4757; z-index: 10; }
+        #timer-bomb span { font-size: 45px; font-weight: bold;}
+
+        /* Results Screen */
+        #results-screen {
+            display: none; position: absolute; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1e1e2e 0%, #313244 100%);
+            z-index: 300; color: white; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .final-scores { display: flex; gap: 40px; margin: 30px 0; }
+        .score-card { background: rgba(255,255,255,0.1); padding: 30px 50px; border-radius: 25px; border: 5px solid white; text-align: center; }
+        .val { font-size: 80px; display: block; font-weight: bold; }
+
+        /* Confetti */
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #f2d74e; top: -10%; z-index: 301; animation: fall 3s linear infinite; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+        .wrong-flash { background-color: #ffcccc !important; }
+
+        #edit-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 30px; border-radius: 20px; border: 5px solid #333; z-index: 200; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="start-page">
+        <div class="start-page-controls">
+            <button id="play-btn">START</button>
+            <button id="edit-btn" onclick="document.getElementById('edit-modal').style.display='block'">EDIT WORDS</button>
+        </div>
+    </div>
+
+    <div id="edit-modal">
+        <h3>Spelling Words</h3>
+        <textarea id="vocab-input" style="width:300px; height:100px;">hen, pen, ten, bed, Ted, red</textarea><br><br>
+        <button onclick="document.getElementById('edit-modal').style.display='none'" style="padding:10px 20px; background:#2ecc71; color:white; border:none; border-radius:10px; cursor:pointer;">SAVE</button>
+    </div>
+
+    <div id="game-container">
+        <div class="side" id="side-a">
+            <div class="score-display side-a-text">TEAM A: <span id="score-a">0</span></div>
+            <div class="vocab-img-container"><img id="img-a" class="vocab-img"></div>
+            <div class="word-display" id="display-a"></div>
+            <div id="letters-a" class="letters-container"></div>
+        </div>
+        <div id="timer-bomb"><span id="timer-val">60</span></div>
+        <div class="side" id="side-b">
+            <div class="score-display side-b-text">TEAM B: <span id="score-b">0</span></div>
+            <div class="vocab-img-container"><img id="img-b" class="vocab-img"></div>
+            <div class="word-display" id="display-b"></div>
+            <div id="letters-b" class="letters-container"></div>
+        </div>
+    </div>
+
+    <div id="results-screen">
+        <h1 style="font-size: 50px; margin: 0;">GAME OVER!</h1>
+        <h2 id="winner-msg" style="font-size: 80px; margin: 10px 0; text-shadow: 0 5px 15px rgba(0,0,0,0.5);"></h2>
+        
+        <div class="final-scores">
+            <div class="score-card" style="border-color: var(--team-a);">
+                <span style="font-size: 24px;">TEAM A</span>
+                <span id="res-a" class="val">0</span>
+            </div>
+            <div class="score-card" style="border-color: var(--team-b);">
+                <span style="font-size: 24px;">TEAM B</span>
+                <span id="res-b" class="val">0</span>
+            </div>
+        </div>
+
+        <button onclick="location.reload()" style="padding:20px 60px; font-size:30px; cursor:pointer; border-radius:20px; background:#2ecc71; color:white; border:none; font-weight:bold;">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        let originalWords = [], gameWords = [], currentIndex = 0;
+        let scoreA = 0, scoreB = 0, timeLeft = 60, gameActive = false;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(freq, type, duration) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+
+        document.getElementById('play-btn').onclick = function() {
+            initAudio();
+            document.getElementById('start-page').style.display = 'none';
+            initGame();
+        };
+
+        function initGame() {
+            const input = document.getElementById('vocab-input').value;
+            originalWords = input.split(',').map(w => w.trim()).filter(w => w !== "");
+            gameWords = [...originalWords].sort(() => Math.random() - 0.5);
+            document.getElementById('game-container').style.display = 'flex';
+            gameActive = true;
+            nextRound();
+            startTimer();
+        }
+
+        function nextRound() {
+            if (currentIndex >= gameWords.length) {
+                gameWords = [...originalWords].sort(() => Math.random() - 0.5);
+                currentIndex = 0;
+            }
+            const word = gameWords[currentIndex];
+            setupSide('a', word); setupSide('b', word);
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(word);
+            msg.rate = 0.8; window.speechSynthesis.speak(msg);
+        }
+
+        function setupSide(side, word) {
+            const display = document.getElementById(`display-${side}`);
+            const letters = document.getElementById(`letters-${side}`);
+            const img = document.getElementById(`img-${side}`);
+            
+            img.src = `${word}.jpg`;
+            img.onerror = () => { img.src = "https://via.placeholder.com/450x350?text=" + word; };
+            
+            display.innerHTML = `<div class="drop-zone" id="zone-${side}"></div>${word.substring(1)}`;
+            
+            letters.innerHTML = '';
+            
+            // LOGIC: Only use uppercase distractors if the target word starts with uppercase (e.g., "Ted")
+            let isUppercaseTarget = (word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase());
+            let alphabet = isUppercaseTarget ? "BPRSMFLG" : "bprsmflg";
+            
+            let distractors = alphabet.replace(word[0], '').split('').sort(() => Math.random() - 0.5);
+            let choices = [word[0], distractors[0], distractors[1]].sort(() => Math.random() - 0.5);
+            
+            choices.forEach(char => {
+                const l = document.createElement('div');
+                l.className = 'letter'; l.textContent = char;
+                l.onclick = () => handleTap(side, char, word[0]);
+                letters.appendChild(l);
+            });
+        }
+
+        function handleTap(side, tapped, correct) {
+            if (!gameActive) return;
+            if (tapped === correct) {
+                playSound(880, 'sine', 0.4);
+                document.getElementById(`zone-${side}`).innerText = correct;
+                let pts = timeLeft <= 10 ? 20 : 10;
+                if (side === 'a') scoreA += pts; else scoreB += pts;
+                document.getElementById('score-a').innerText = scoreA;
+                document.getElementById('score-b').innerText = scoreB;
+                gameActive = false;
+                setTimeout(() => { currentIndex++; gameActive = true; nextRound(); }, 600);
+            } else {
+                playSound(120, 'sawtooth', 0.3);
+                const sideEl = document.getElementById(`side-${side}`);
+                sideEl.classList.add('wrong-flash');
+                setTimeout(() => sideEl.classList.remove('wrong-flash'), 200);
+            }
+        }
+
+        function startTimer() {
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-val').innerText = timeLeft;
+                if (timeLeft <= 10) document.getElementById('timer-bomb').style.borderColor = "#f1c40f";
+                if (timeLeft <= 0) { clearInterval(timerInterval); showResults(); }
+            }, 1000);
+        }
+
+        function createConfetti() {
+            for(let i=0; i<50; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.backgroundColor = ['#f2d74e','#95c3de','#ff9a91','#ace6d3'][Math.floor(Math.random()*4)];
+                c.style.animationDelay = Math.random() * 3 + 's';
+                document.getElementById('results-screen').appendChild(c);
+            }
+        }
+
+        function showResults() {
+            gameActive = false;
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('res-a').innerText = scoreA;
+            document.getElementById('res-b').innerText = scoreB;
+            const msg = document.getElementById('winner-msg');
+            if (scoreA > scoreB) { msg.innerText = "TEAM A WINS! 🏆"; msg.style.color = "var(--team-a)"; createConfetti(); }
+            else if (scoreB > scoreA) { msg.innerText = "TEAM B WINS! 🏆"; msg.style.color = "var(--team-b)"; createConfetti(); }
+            else { msg.innerText = "IT'S A DRAW! 🤝"; }
+            document.getElementById('results-screen').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
